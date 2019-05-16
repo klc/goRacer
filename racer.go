@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-type racer struct {
+type Racer struct {
 	texture      *sdl.Texture
 	position     int32
 	nextPosition int32
@@ -17,9 +17,10 @@ type racer struct {
 	crash        bool
 	music        *mix.Music
 	y            int32
+	angle        float64
 }
 
-func newRacer(rederer *sdl.Renderer) (*racer, error) {
+func newRacer(rederer *sdl.Renderer) (*Racer, error) {
 	texture, err := img.LoadTexture(rederer, "assets/racer.png")
 
 	if err != nil {
@@ -28,15 +29,15 @@ func newRacer(rederer *sdl.Renderer) (*racer, error) {
 
 	positions := []int32{50, 250, 450}
 
-	return &racer{texture: texture, position: 1, nextPosition: 1, positions: positions, crash: false}, nil
+	return &Racer{texture: texture, position: 1, nextPosition: 1, angle: 0, positions: positions, crash: false}, nil
 }
 
-func (racer *racer) paint(renderer *sdl.Renderer) error {
+func (racer *Racer) paint(renderer *sdl.Renderer) error {
 	racer.mutex.RLock()
 	defer racer.mutex.RUnlock()
 
 	rect := &sdl.Rect{X: 50, Y: racer.getPosition(), W: 200, H: 100}
-	err := renderer.CopyEx(racer.texture, nil, rect, 0, nil, sdl.FLIP_NONE)
+	err := renderer.CopyEx(racer.texture, nil, rect, racer.angle, nil, sdl.FLIP_NONE)
 
 	if err != nil {
 		return fmt.Errorf("racer render error : %v", err)
@@ -45,11 +46,11 @@ func (racer *racer) paint(renderer *sdl.Renderer) error {
 	return nil
 }
 
-func (racer *racer) destroy() {
+func (racer *Racer) destroy() {
 	racer.texture.Destroy()
 }
 
-func (racer *racer) newPosition(move int32) {
+func (racer *Racer) newPosition(move int32) {
 	newPosition := racer.position + move
 
 	if newPosition <= 0 {
@@ -61,11 +62,11 @@ func (racer *racer) newPosition(move int32) {
 	}
 }
 
-func (racer *racer) getPosition() int32 {
+func (racer *Racer) getPosition() int32 {
 
 	if racer.position == racer.nextPosition {
 		racer.y = racer.positions[racer.position]
-
+		racer.angle = 0
 		return racer.y
 	}
 
@@ -74,20 +75,23 @@ func (racer *racer) getPosition() int32 {
 			racer.position = racer.nextPosition
 		} else {
 			racer.y -= 20
+			racer.angle = -20
 		}
 	} else {
 		if racer.y == racer.positions[racer.nextPosition] {
 			racer.position = racer.nextPosition
 		} else {
 			racer.y += 20
+			racer.angle = 20
 		}
 	}
 
 	return racer.y
 }
 
-func (racer *racer) restart() {
+func (racer *Racer) restart() {
 	racer.crash = false
 	racer.position = 1
 	racer.nextPosition = 1
+	racer.angle = 0
 }

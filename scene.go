@@ -12,7 +12,7 @@ type scene struct {
 	frameRate  int32
 	background *sdl.Texture
 	road       *road
-	racer      *racer
+	racer      *Racer
 	cars       *Cars
 }
 

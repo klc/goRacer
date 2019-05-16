@@ -121,13 +121,13 @@ func (cars *Cars) destroy() {
 	}
 }
 
-func (cars *Cars) crash(racer *racer) {
+func (cars *Cars) crash(racer *Racer) {
 	for _, car := range cars.cars {
 		car.crash(racer)
 	}
 }
 
-func (car *Car) crash(racer *racer) {
+func (car *Car) crash(racer *Racer) {
 	var carxFront int32
 
 	if racer.position != racer.nextPosition {
