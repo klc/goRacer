@@ -1,4 +1,4 @@
-package main
+package road
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-type road struct {
+type Road struct {
 	texture *sdl.Texture
 	speed   int32
 	mutex   sync.RWMutex
@@ -15,16 +15,16 @@ type road struct {
 	x int32
 }
 
-func newRoad(renderer *sdl.Renderer) (*road, error) {
+func NewRoad(renderer *sdl.Renderer) (*Road, error) {
 	texture, err := img.LoadTexture(renderer, "assets/road.png")
 	if err != nil {
 		return nil, fmt.Errorf("load backgroun error : %v", err)
 	}
 
-	return &road{texture: texture, speed: 15, x: 0}, nil
+	return &Road{texture: texture, speed: 15, x: 0}, nil
 }
 
-func (road *road) paint(renderer *sdl.Renderer) error {
+func (road *Road) Paint(renderer *sdl.Renderer) error {
 	road.mutex.RLock()
 	defer road.mutex.RUnlock()
 
@@ -39,7 +39,7 @@ func (road *road) paint(renderer *sdl.Renderer) error {
 	return nil
 }
 
-func (road *road) update() {
+func (road *Road) Update() {
 	if road.x >= 195 {
 		road.x = 0
 	} else {
@@ -47,10 +47,14 @@ func (road *road) update() {
 	}
 }
 
-func (road *road) destroy() {
+func (road *Road) Destroy() {
 	road.texture.Destroy()
 }
 
-func (road *road) restart() {
+func (road *Road) Restart() {
 	road.x = 0
+}
+
+func (road *Road) SetSpeed(speed int32) {
+	road.speed = speed
 }

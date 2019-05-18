@@ -1,7 +1,8 @@
-package main
+package cars
 
 import (
 	"fmt"
+	"github.com/mkilic91/goRace/racer"
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 	"math/rand"
@@ -31,7 +32,7 @@ var images = []string{
 
 var positions = []int32{50, 250, 450}
 
-func newCars(renderer *sdl.Renderer) (*Cars, error) {
+func NewCars(renderer *sdl.Renderer) (*Cars, error) {
 
 	cars := &Cars{
 		speed: 7,
@@ -68,7 +69,7 @@ func newCar() *Car {
 	}
 }
 
-func (cars *Cars) paint(renderer *sdl.Renderer) error {
+func (cars *Cars) Paint(renderer *sdl.Renderer) error {
 	cars.mutex.RLock()
 	defer cars.mutex.RUnlock()
 
@@ -99,7 +100,7 @@ func (car *Car) paint(renderer *sdl.Renderer, textures []*sdl.Texture) error {
 	return nil
 }
 
-func (cars *Cars) update() {
+func (cars *Cars) Update() {
 	var temp []*Car
 
 	for _, car := range cars.cars {
@@ -115,32 +116,36 @@ func (cars *Cars) update() {
 
 }
 
-func (cars *Cars) destroy() {
+func (cars *Cars) Destroy() {
 	for _, texture := range cars.textures {
 		texture.Destroy()
 	}
 }
 
-func (cars *Cars) crash(racer *Racer) {
+func (cars *Cars) Crash(racer *racer.Racer) {
 	for _, car := range cars.cars {
 		car.crash(racer)
 	}
 }
 
-func (car *Car) crash(racer *Racer) {
+func (car *Car) crash(racer *racer.Racer) {
 	var carxFront int32
 
-	if racer.position != racer.nextPosition {
+	if racer.GetPosition() != racer.GetNextPosition() {
 		carxFront = 150
 	} else {
 		carxFront = 250
 	}
 
-	if car.position == racer.position && ((car.x > 50 && car.x < carxFront) || (car.x+200 > 50 && car.x+200 < 250)) {
-		racer.crash = true
+	if car.position == racer.GetPosition() && ((car.x > 50 && car.x < carxFront) || (car.x+200 > 50 && car.x+200 < 250)) {
+		racer.SetCrash(true)
 	}
 }
 
-func (cars *Cars) restart() {
+func (cars *Cars) Restart() {
 	cars.cars = []*Car{}
+}
+
+func (cars *Cars) SetSpeed(speed int32) {
+	cars.speed = speed
 }

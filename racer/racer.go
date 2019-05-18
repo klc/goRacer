@@ -1,4 +1,4 @@
-package main
+package racer
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ type Racer struct {
 	angle        float64
 }
 
-func newRacer(rederer *sdl.Renderer) (*Racer, error) {
+func NewRacer(rederer *sdl.Renderer) (*Racer, error) {
 	texture, err := img.LoadTexture(rederer, "assets/racer.png")
 
 	if err != nil {
@@ -32,7 +32,7 @@ func newRacer(rederer *sdl.Renderer) (*Racer, error) {
 	return &Racer{texture: texture, position: 1, nextPosition: 1, angle: 0, positions: positions, crash: false}, nil
 }
 
-func (racer *Racer) paint(renderer *sdl.Renderer) error {
+func (racer *Racer) Paint(renderer *sdl.Renderer) error {
 	racer.mutex.RLock()
 	defer racer.mutex.RUnlock()
 
@@ -46,11 +46,11 @@ func (racer *Racer) paint(renderer *sdl.Renderer) error {
 	return nil
 }
 
-func (racer *Racer) destroy() {
+func (racer *Racer) Destroy() {
 	racer.texture.Destroy()
 }
 
-func (racer *Racer) newPosition(move int32) {
+func (racer *Racer) NewPosition(move int32) {
 	newPosition := racer.position + move
 
 	if newPosition <= 0 {
@@ -89,9 +89,25 @@ func (racer *Racer) getPosition() int32 {
 	return racer.y
 }
 
-func (racer *Racer) restart() {
+func (racer *Racer) Restart() {
 	racer.crash = false
 	racer.position = 1
 	racer.nextPosition = 1
 	racer.angle = 0
+}
+
+func (racer *Racer) GetPosition() int32 {
+	return racer.position
+}
+
+func (racer *Racer) GetNextPosition() int32 {
+	return racer.nextPosition
+}
+
+func (racer *Racer) SetCrash(crash bool) {
+	racer.crash = crash
+}
+
+func (racer *Racer) GetCrash() bool {
+	return racer.crash
 }

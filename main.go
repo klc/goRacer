@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/mkilic91/goRace/scene"
 	"github.com/veandco/go-sdl2/mix"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
@@ -88,20 +89,20 @@ func run() error {
 		return fmt.Errorf("intro error :%v", err)
 	}
 
-	var scene *scene
+	var newScene *scene.Scene
 
 	sdl.Do(func() {
-		scene, err = newScene(renderer)
+		newScene, err = scene.NewScene(renderer)
 	})
 	if err != nil {
 		return fmt.Errorf("scene create error :%v", err)
 	}
 
 	defer sdl.Do(func() {
-		scene.destroy()
+		newScene.Destroy()
 	})
 
-	err = scene.run(renderer)
+	err = newScene.Run(renderer)
 
 	if err != nil {
 		return fmt.Errorf("scene run error :%v", err)

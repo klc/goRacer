@@ -1,4 +1,4 @@
-package main
+package scene
 
 import (
 	"fmt"
@@ -6,17 +6,21 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 	"sync"
 	"time"
+
+	"github.com/mkilic91/goRace/cars"
+	"github.com/mkilic91/goRace/racer"
+	"github.com/mkilic91/goRace/road"
 )
 
-type scene struct {
+type Scene struct {
 	frameRate  int32
 	background *sdl.Texture
-	road       *road
-	racer      *Racer
-	cars       *Cars
+	road       *road.Road
+	racer      *racer.Racer
+	cars       *cars.Cars
 }
 
-func newScene(renderer *sdl.Renderer) (*scene, error) {
+func NewScene(renderer *sdl.Renderer) (*Scene, error) {
 
 	var frameRate int32 = 60
 
@@ -25,27 +29,27 @@ func newScene(renderer *sdl.Renderer) (*scene, error) {
 		return nil, fmt.Errorf("load backgroun error : %v", err)
 	}
 
-	road, err := newRoad(renderer)
+	newRoad, err := road.NewRoad(renderer)
 	if err != nil {
 		return nil, fmt.Errorf("newroad error :%v", err)
 	}
-	road.speed = 1200 / frameRate
+	newRoad.SetSpeed(1200 / frameRate)
 
-	racer, err := newRacer(renderer)
+	newRacer, err := racer.NewRacer(renderer)
 	if err != nil {
 		return nil, fmt.Errorf("newracer error :%v", err)
 	}
 
-	cars, err := newCars(renderer)
+	newCars, err := cars.NewCars(renderer)
 	if err != nil {
 		return nil, fmt.Errorf("newcars error :v", err)
 	}
-	cars.speed = 600 / frameRate
+	newCars.SetSpeed(600 / frameRate)
 
-	return &scene{frameRate: frameRate, background: background, road: road, racer: racer, cars: cars}, nil
+	return &Scene{frameRate: frameRate, background: background, road: newRoad, racer: newRacer, cars: newCars}, nil
 }
 
-func (scene *scene) run(renderer *sdl.Renderer) error {
+func (scene *Scene) Run(renderer *sdl.Renderer) error {
 	errc := make(chan error)
 	defer close(errc)
 	events := make(chan sdl.Event)
@@ -83,8 +87,8 @@ func (scene *scene) run(renderer *sdl.Renderer) error {
 				default:
 					scene.update()
 
-					if scene.racer.crash {
-						outro(renderer)
+					if scene.racer.GetCrash() {
+						//outro(renderer)
 						scene.restart()
 						time.Sleep(time.Second)
 					}
@@ -102,7 +106,7 @@ func (scene *scene) run(renderer *sdl.Renderer) error {
 	}
 }
 
-func (scene *scene) handleEvent(event sdl.Event) bool {
+func (scene *Scene) handleEvent(event sdl.Event) bool {
 	switch e := event.(type) {
 	case *sdl.QuitEvent:
 		return true
@@ -110,10 +114,10 @@ func (scene *scene) handleEvent(event sdl.Event) bool {
 		if event.GetType() == sdl.KEYDOWN {
 			switch e.Keysym.Sym {
 			case sdl.K_UP:
-				scene.racer.newPosition(-1)
+				scene.racer.NewPosition(-1)
 				break
 			case sdl.K_DOWN:
-				scene.racer.newPosition(1)
+				scene.racer.NewPosition(1)
 				break
 			}
 		}
@@ -122,26 +126,26 @@ func (scene *scene) handleEvent(event sdl.Event) bool {
 	return false
 }
 
-func (scene *scene) paint(renderer *sdl.Renderer) error {
+func (scene *Scene) paint(renderer *sdl.Renderer) error {
 	renderer.Clear()
 	var err error
 
 	sdl.Do(func() {
-		err = scene.road.paint(renderer)
+		err = scene.road.Paint(renderer)
 	})
 	if err != nil {
 		return fmt.Errorf("road paint error :%v", err)
 	}
 
 	sdl.Do(func() {
-		err = scene.racer.paint(renderer)
+		err = scene.racer.Paint(renderer)
 	})
 	if err != nil {
 		return fmt.Errorf("racer paint error :%v", err)
 	}
 
 	sdl.Do(func() {
-		err = scene.cars.paint(renderer)
+		err = scene.cars.Paint(renderer)
 	})
 	if err != nil {
 		return fmt.Errorf("cars paint error :%v", err)
@@ -155,20 +159,20 @@ func (scene *scene) paint(renderer *sdl.Renderer) error {
 	return nil
 }
 
-func (scene *scene) destroy() {
-	scene.road.destroy()
-	scene.racer.destroy()
-	scene.cars.destroy()
+func (scene *Scene) Destroy() {
+	scene.road.Destroy()
+	scene.racer.Destroy()
+	scene.cars.Destroy()
 }
 
-func (scene *scene) update() {
-	scene.road.update()
-	scene.cars.update()
-	scene.cars.crash(scene.racer)
+func (scene *Scene) update() {
+	scene.road.Update()
+	scene.cars.Update()
+	scene.cars.Crash(scene.racer)
 }
 
-func (scene *scene) restart() {
-	scene.road.restart()
-	scene.racer.restart()
-	scene.cars.restart()
+func (scene *Scene) restart() {
+	scene.road.Restart()
+	scene.racer.Restart()
+	scene.cars.Restart()
 }
