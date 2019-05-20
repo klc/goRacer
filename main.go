@@ -3,111 +3,82 @@ package main
 import (
 	"fmt"
 	"github.com/mkilic91/goRace/scene"
-	"github.com/veandco/go-sdl2/mix"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
 	"os"
+	"runtime"
 	"time"
 )
 
 func main() {
-	sdl.Main(func() {
-		if err := run(); err != nil {
-			fmt.Fprintf(os.Stderr, "%v", err)
-			os.Exit(2)
-		}
-	})
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
+		os.Exit(2)
+	}
 }
 
 func run() error {
 	var err error
 
-	sdl.Do(func() {
-		err = sdl.Init(sdl.INIT_EVERYTHING)
-	})
+	err = sdl.Init(sdl.INIT_EVERYTHING)
 	if err != nil {
 		return fmt.Errorf("could not initialize SDL: %v", err)
 	}
-	defer func() {
-		sdl.Do(func() {
-			sdl.Quit()
-		})
-	}()
+	defer sdl.Quit()
 
-	sdl.Do(func() {
-		err = ttf.Init()
-	})
+	err = ttf.Init()
 	if err != nil {
 		return fmt.Errorf("could not initialize TTF: %v", err)
 	}
-	defer func() {
-		sdl.Do(func() {
-			ttf.Quit()
-		})
-	}()
+	defer ttf.Quit()
 
-	sdl.Do(func() {
-		err = mix.Init(mix.INIT_MP3)
-	})
-	if err != nil {
-		return fmt.Errorf("could not initialize MIX: %v", err)
-	}
-	defer func() {
-		sdl.Do(func() {
-			mix.Quit()
-		})
-	}()
+	/*	err = mix.Init(mix.INIT_MP3)
+		if err != nil {
+			return fmt.Errorf("could not initialize MIX: %v", err)
+		}
+		mix.Quit()
 
-	err = mix.OpenAudio(22050, mix.DEFAULT_FORMAT, 2, 4096)
-	if err != nil {
-		return fmt.Errorf("mix audio error :%v", err)
-	}
-	defer func() {
-		sdl.Do(func() {
-			mix.CloseAudio()
-		})
-	}()
+		err = mix.OpenAudio(22050, mix.DEFAULT_FORMAT, 2, 4096)
+		if err != nil {
+			return fmt.Errorf("mix audio error :%v", err)
+		}
+		mix.CloseAudio()*/
 
 	var window *sdl.Window
 	var renderer *sdl.Renderer
 
-	sdl.Do(func() {
-		window, renderer, err = sdl.CreateWindowAndRenderer(1415, 600, sdl.WINDOW_SHOWN)
-	})
+	window, renderer, err = sdl.CreateWindowAndRenderer(1415, 600, sdl.WINDOW_SHOWN)
 	if err != nil {
 		return fmt.Errorf("could not create window: %v", err)
 	}
-	defer func() {
-		sdl.Do(func() {
-			window.Destroy()
-		})
-	}()
+	defer window.Destroy()
 
 	err = intro(renderer)
-
 	if err != nil {
 		return fmt.Errorf("intro error :%v", err)
 	}
 
 	var newScene *scene.Scene
 
-	sdl.Do(func() {
-		newScene, err = scene.NewScene(renderer)
-	})
+	newScene, err = scene.NewScene(renderer)
 	if err != nil {
 		return fmt.Errorf("scene create error :%v", err)
 	}
+	defer newScene.Destroy()
 
-	defer sdl.Do(func() {
-		newScene.Destroy()
-	})
+	var events chan sdl.Event
+	events = make(chan sdl.Event)
+	errc := newScene.Run(events, renderer)
 
-	err = newScene.Run(renderer)
-
-	if err != nil {
-		return fmt.Errorf("scene run error :%v", err)
+	runtime.LockOSThread()
+	for {
+		select {
+		case events <- sdl.WaitEvent():
+		case err := <-errc:
+			return err
+		}
 	}
-	return err
+
 }
 
 func drawTitle(renderer *sdl.Renderer, text string) error {
@@ -149,9 +120,7 @@ func drawTitle(renderer *sdl.Renderer, text string) error {
 func intro(renderer *sdl.Renderer) error {
 	var err error
 
-	sdl.Do(func() {
-		err = drawTitle(renderer, "Speedy Car")
-	})
+	err = drawTitle(renderer, "Speedy Car")
 
 	if err != nil {
 		return fmt.Errorf("draw title error :%v", err)
@@ -165,10 +134,7 @@ func intro(renderer *sdl.Renderer) error {
 func outro(renderer *sdl.Renderer) error {
 	var err error
 
-	sdl.Do(func() {
-		err = drawTitle(renderer, "Game Over")
-	})
-
+	err = drawTitle(renderer, "Game Over")
 	if err != nil {
 		return fmt.Errorf("draw title error :%v", err)
 	}

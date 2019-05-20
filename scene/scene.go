@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
-	"sync"
 	"time"
 
 	"github.com/mkilic91/goRace/cars"
@@ -49,61 +48,37 @@ func NewScene(renderer *sdl.Renderer) (*Scene, error) {
 	return &Scene{frameRate: frameRate, background: background, road: newRoad, racer: newRacer, cars: newCars}, nil
 }
 
-func (scene *Scene) Run(renderer *sdl.Renderer) error {
+func (scene *Scene) Run(events <-chan sdl.Event, renderer *sdl.Renderer) <-chan error {
 	errc := make(chan error)
-	defer close(errc)
-	events := make(chan sdl.Event)
-	donec := make(chan bool)
-	defer close(donec)
 
 	go func() {
+		defer close(errc)
+		tick := time.Tick(10 * time.Millisecond)
 		for {
 			select {
-			case <-donec:
-				close(events)
-			default:
-				events <- sdl.WaitEvent()
+			case e := <-events:
+				if done := scene.handleEvent(e); done {
+					return
+				}
+			case <-tick:
+				scene.update()
+
+				if scene.racer.GetCrash() {
+					//outro(renderer)
+					time.Sleep(time.Second)
+					scene.restart()
+				}
+
+				err := scene.paint(renderer)
+
+				if err != nil {
+					errc <- err
+				}
 			}
 		}
 	}()
 
-	wg := sync.WaitGroup{}
-	for {
-		select {
-		case err := <-errc:
-			return err
-		case <-donec:
-			return nil
-		default:
-			wg.Add(1)
-			go func() {
-				select {
-				case e := <-events:
-					if done := scene.handleEvent(e); done {
-						go func() {
-							donec <- done
-						}()
-					}
-				default:
-					scene.update()
-
-					if scene.racer.GetCrash() {
-						//outro(renderer)
-						scene.restart()
-						time.Sleep(time.Second)
-					}
-
-					err := scene.paint(renderer)
-
-					if err != nil {
-						errc <- err
-					}
-				}
-				wg.Done()
-			}()
-			wg.Wait()
-		}
-	}
+	return errc
 }
 
 func (scene *Scene) handleEvent(event sdl.Event) bool {
@@ -130,31 +105,22 @@ func (scene *Scene) paint(renderer *sdl.Renderer) error {
 	renderer.Clear()
 	var err error
 
-	sdl.Do(func() {
-		err = scene.road.Paint(renderer)
-	})
+	err = scene.road.Paint(renderer)
 	if err != nil {
 		return fmt.Errorf("road paint error :%v", err)
 	}
 
-	sdl.Do(func() {
-		err = scene.racer.Paint(renderer)
-	})
+	err = scene.racer.Paint(renderer)
 	if err != nil {
 		return fmt.Errorf("racer paint error :%v", err)
 	}
 
-	sdl.Do(func() {
-		err = scene.cars.Paint(renderer)
-	})
+	err = scene.cars.Paint(renderer)
 	if err != nil {
 		return fmt.Errorf("cars paint error :%v", err)
 	}
 
-	sdl.Do(func() {
-		renderer.Present()
-		sdl.Delay(1000 / uint32(scene.frameRate))
-	})
+	renderer.Present()
 
 	return nil
 }
